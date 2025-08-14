@@ -1,0 +1,12 @@
+; This is sys.itp
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ    fudgeQQ
+     1              2              yes            0.5       0.8333
+
+[ atomtypes ]
+; name   at.num      mass       charge   ptype     sigma (nm)    epsilon (kJ/mol)
+ca           6    12.010736    0.000000    A      3.399670E-01    3.598240E-01
+cg           6    12.010736    0.000000    A      3.399670E-01    8.786400E-01
+n1           7    14.006703    0.000000    A      3.249999E-01    7.112800E-01
+ha           1     1.007941    0.000000    A      2.599642E-01    6.276000E-02
+

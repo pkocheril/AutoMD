@@ -1,0 +1,88 @@
+[ moleculetype ]
+; name          nrexcl
+Benzonitrile_opt       3
+
+; Atomic charges are those loaded from .mol2 file
+[ atoms ]
+;  Index   type   residue  resname   atom        cgnr     charge       mass
+     1     ca         1      MOL     C             1   -0.04440000   12.010736
+     2     ca         1      MOL     C             2   -0.06050000   12.010736
+     3     ca         1      MOL     C             3   -0.06170000   12.010736
+     4     ca         1      MOL     C             4   -0.06050000   12.010736
+     5     ca         1      MOL     C             5   -0.04440000   12.010736
+     6     ca         1      MOL     C             6    0.05180000   12.010736
+     7     cg         1      MOL     C             7    0.09920000   12.010736
+     8     n1         1      MOL     N             8   -0.19090000   14.006703
+     9     ha         1      MOL     H             9    0.06300000    1.007941
+    10     ha         1      MOL     H            10    0.06180000    1.007941
+    11     ha         1      MOL     H            11    0.06180000    1.007941
+    12     ha         1      MOL     H            12    0.06180000    1.007941
+    13     ha         1      MOL     H            13    0.06300000    1.007941
+ 
+[ bonds ]
+; atom_i  atom_j  functype      r0 (nm)    k (kJ/mol/nm^2)
+    1       2         1        0.139192     3.382315E+05     ; C-C, mSeminario method
+    1       6         1        0.140376     2.984001E+05     ; C-C, mSeminario method
+    1       9         1        0.108416     3.241998E+05     ; C-H, mSeminario method
+    2       3         1        0.139627     3.298548E+05     ; C-C, mSeminario method
+    2      10         1        0.108507     3.206391E+05     ; C-H, mSeminario method
+    3       4         1        0.139627     3.309926E+05     ; C-C, mSeminario method
+    3      11         1        0.108538     3.199355E+05     ; C-H, mSeminario method
+    4       5         1        0.139192     3.371208E+05     ; C-C, mSeminario method
+    4      12         1        0.108507     3.206383E+05     ; C-H, mSeminario method
+    5       6         1        0.140377     2.983875E+05     ; C-C, mSeminario method
+    5      13         1        0.108416     3.242003E+05     ; C-H, mSeminario method
+    6       7         1        0.143325     2.676089E+05     ; C-C, mSeminario method
+    7       8         1        0.116308     1.150204E+06     ; C-N, mSeminario method
+ 
+[ angles ]
+; atom_i  atom_j  atom_k  functype    a0 (Deg.)  k (kJ/mol/rad^2)
+    2       1       6         1       119.600      7.460686E+02     ; C-C-C, mSeminario method
+    2       1       9         1       120.824      2.784848E+02     ; C-C-H, mSeminario method
+    6       1       9         1       119.576      2.663506E+02     ; C-C-H, mSeminario method
+    1       2       3         1       120.180      8.499566E+02     ; C-C-C, mSeminario method
+    1       2      10         1       119.689      2.756680E+02     ; C-C-H, mSeminario method
+    3       2      10         1       120.131      2.767981E+02     ; C-C-H, mSeminario method
+    2       3       4         1       120.198      8.710374E+02     ; C-C-C, mSeminario method
+    2       3      11         1       119.901      2.792869E+02     ; C-C-H, mSeminario method
+    4       3      11         1       119.901      2.792863E+02     ; C-C-H, mSeminario method
+    3       4       5         1       120.180      8.499516E+02     ; C-C-C, mSeminario method
+    3       4      12         1       120.131      2.767978E+02     ; C-C-H, mSeminario method
+    5       4      12         1       119.689      2.756684E+02     ; C-C-H, mSeminario method
+    4       5       6         1       119.601      7.460510E+02     ; C-C-C, mSeminario method
+    4       5      13         1       120.824      2.784810E+02     ; C-C-H, mSeminario method
+    6       5      13         1       119.576      2.663448E+02     ; C-C-H, mSeminario method
+    1       6       5         1       120.242      8.324057E+02     ; C-C-C, mSeminario method
+    1       6       7         1       119.878      5.459437E+02     ; C-C-C, mSeminario method
+    5       6       7         1       119.880      5.459423E+02     ; C-C-C, mSeminario method
+    6       7       8         1       179.987      1.919204E+03     ; C-C-N, mSeminario method
+ 
+[ dihedrals ] ; propers
+; atom_i  atom_j  atom_k  atom_l  functype   d0 (Deg.)   k (kJ/mol/rad^2)    ; Case of functype=2
+; atom_i  atom_j  atom_k  atom_l  functype  phase (Deg.)  kd (kJ/mol) pn     ; Case of functype=9
+    1       2       3       4         2        -0.000      4.178516E+02      ; C-C-C-C, mSeminario method
+    1       2       3      11         2       180.000      2.272624E+02      ; C-C-C-H, mSeminario method
+    1       6       5       4         2         0.001      4.253933E+02      ; C-C-C-C, mSeminario method
+    1       6       5      13         2      -180.000      2.257162E+02      ; C-C-C-H, mSeminario method
+    2       1       6       5         2        -0.001      4.253936E+02      ; C-C-C-C, mSeminario method
+    2       1       6       7         2       179.999      4.208901E+02      ; C-C-C-C, mSeminario method
+    2       3       4       5         2         0.000      4.178549E+02      ; C-C-C-C, mSeminario method
+    2       3       4      12         2      -180.000      2.229965E+02      ; C-C-C-H, mSeminario method
+    3       2       1       6         2         0.001      4.294950E+02      ; C-C-C-C, mSeminario method
+    3       2       1       9         2       180.000      2.201495E+02      ; C-C-C-H, mSeminario method
+    3       4       5       6         2        -0.001      4.294899E+02      ; C-C-C-C, mSeminario method
+    3       4       5      13         2      -180.000      2.201515E+02      ; C-C-C-H, mSeminario method
+    4       3       2      10         2       180.000      2.229965E+02      ; C-C-C-H, mSeminario method
+    4       5       6       7         2      -179.999      4.208807E+02      ; C-C-C-C, mSeminario method
+    5       4       3      11         2      -180.000      2.272626E+02      ; C-C-C-H, mSeminario method
+    5       6       1       9         2       180.000      2.257151E+02      ; C-C-C-H, mSeminario method
+    6       1       2      10         2      -179.999      2.266600E+02      ; C-C-C-H, mSeminario method
+    6       5       4      12         2       179.999      2.266566E+02      ; C-C-C-H, mSeminario method
+    7       6       1       9         2        -0.000      2.244409E+02      ; C-C-C-H, mSeminario method
+    7       6       5      13         2         0.000      2.244393E+02      ; C-C-C-H, mSeminario method
+    9       1       2      10         2        -0.000      1.509219E+02      ; H-C-C-H, mSeminario method
+   10       2       3      11         2        -0.000      1.540504E+02      ; H-C-C-H, mSeminario method
+   11       3       4      12         2         0.000      1.540501E+02      ; H-C-C-H, mSeminario method
+   12       4       5      13         2         0.000      1.509219E+02      ; H-C-C-H, mSeminario method
+
+; No pair needs to generate

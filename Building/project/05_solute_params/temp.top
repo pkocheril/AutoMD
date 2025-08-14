@@ -1,0 +1,10 @@
+; Extracted [ system ] and [ molecules ]
+
+[ system ]
+Benzonitrile_opt
+
+
+[ molecules ]
+; Molecule      nmols
+Benzonitrile_opt     1
+

@@ -1,0 +1,38 @@
+; Topology generated from /home/ghahremanpour/Liquids/MOLECULES/OEP/water/water-3-oep.log.gz
+; Charge method used esp
+; MOL_GMX.top created by acpype (Rev: 0) on Wed Feb 14 17:51:54 2018
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+[ atomtypes ]
+;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb
+ oh       oh          0.00000  0.00000   A     3.06647e-01   8.80314e-01 ; 1.72  0.2104
+ ho       ho          0.00000  0.00000   A     0.00000e+00   0.00000e+00 ; 0.00  0.0000
+
+[ moleculetype ]
+;name            nrexcl
+ MOL              3
+
+[ atoms ]
+;   nr  type  resi  res  atom  cgnr     charge      mass       ; qtot   bond_type
+     1   oh     1   MOL    O1    1    -0.680007     16.00000 ; qtot -0.680
+     2   ho     1   MOL    H1    2     0.340003      1.00800 ; qtot -0.340
+     3   ho     1   MOL    H2    3     0.340003      1.00800 ; qtot 0.000
+
+[ bonds ]
+;   ai     aj funct   r             k
+     1      2   1    9.7300e-02    3.1079e+05 ;     O1 - H1    
+     1      3   1    9.7300e-02    3.1079e+05 ;     O1 - H2    
+
+[ angles ]
+;   ai     aj     ak    funct   theta         cth
+     2      1      3      1    1.0649e+02    3.4844e+02 ;     H1 - O1     - H2    
+
+[ system ]
+ MOL
+
+[ molecules ]
+; Compound        nmols
+ MOL              1     
