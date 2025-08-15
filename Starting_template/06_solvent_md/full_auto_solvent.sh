@@ -36,7 +36,7 @@ done
 
 for file in *_v.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/p.mdp -c $file -t ${file%.gro}_v.cpt -p solv.top -o ${file%_v.gro}_p.tpr -maxwarn 0
+    gmx grompp -f md/p.mdp -c $file -t ${file%_v.gro}_v.cpt -p solv.top -o ${file%_v.gro}_p.tpr -maxwarn 0
 done
 
 for file in *_p.tpr; do

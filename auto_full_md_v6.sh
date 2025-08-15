@@ -2,12 +2,12 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=12:00:00   # walltime, maximum 168 hours
-#SBATCH --ntasks=16   # number of processor cores (i.e. tasks)
+#SBATCH --time=24:00:00   # walltime, maximum 168 hours; at least 2 hours, probably 12-24
+#SBATCH --ntasks=20   # number of processor cores (i.e. tasks); at least 4, probably 16-20
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --mem-per-cpu=4G   # memory per CPU core
-#SBATCH -J "My First MD Simulation"   # job name
-#SBATCH --mail-user=pkocheri@caltech.edu   # email address
+#SBATCH -J "Automated MD"   # job name
+#SBATCH --mail-user=pkocheri@caltech.edu   # email address; update as needed
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -18,7 +18,7 @@
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
 #MYHOME=`pwd`
-#MYTMP="/central/scratch/$USER/scratch/$SLURM_JOBID"
+#MYTMP="/resnick/scratch/$USER/scratch/$SLURM_JOBID"
 #mkdir -p $MYTMP
 #cp -r * $MYTMP/.
 #cd $MYTMP
@@ -39,7 +39,6 @@ done
 ### 1. Copy starting template and move files
 
 cp -r /resnick/groups/WeiLab/Phil/MD/Starting_template/* ./
-#cp -r /central/groups/WeiLab/Phil/MD/Starting_template/* ./
 mv *.gro *.top *.cd* 00_inputs/
 cd 00_inputs/
 
@@ -57,7 +56,7 @@ python 02-gjf_maker.py
 g16 Molecule_linked.gjf
 
 
-### 4. Convert Gaussian output to .mol2 and make .fchk
+### 4. Convert Gaussian .chk -> .fchk -> .mol2
 
 for file in *.chk; do
     [ -f $file ] || continue
@@ -93,8 +92,6 @@ echo -e "2\n\n1\n2\n2\nMolecule_optfreq.fchk\n\n\n0\n" | ./sobtop Molecule_optfr
 
 ### 8. Move and modify molecule topology files
 
-# -- noticed that OpenBabel's mol2 generation doesn't use the same numbering as GV
-
 cp Molecule_optfreq.gro ../../05_solute_params/Molecule.gro
 cp Molecule_optfreq.itp ../../05_solute_params/Molecule.itp
 cp Molecule_optfreq.top ../../05_solute_params/Molecule.top
@@ -114,6 +111,9 @@ python 07-solvent_topology_edit.py
 python 08-build_box.py
 # After this, you can visualize your solvent box with: vmd solv.gro
 
+# Visualize density and temperature equilibrations
+python 09-plot_equilibration.py
+# this saves a figure called "solvent_equilibration.png" into 08_final_results/
 
 ### 10. Solvent equilibration
 
@@ -128,14 +128,14 @@ cp ../05_solute_params/temp.top ../05_solute_params/Molecule.gro ../06_solvent_m
 mkdir itp
 #cp ../06/solvent_md/solv.top ./itp/
 cp ../05_solute_params/sys.itp ../05_solute_params/Molecule-solv.itp ../06_solvent_md/*.itp ../06_solvent_md/solv.top ./itp/
-python 09-finalize_system_topology.py
+python 10-finalize_system_topology.py
 
 # Make solvated box
 gmx editconf -f Molecule.gro -o box0.gro -c -d 2.0 -bt cubic
 gmx solvate -cp box0.gro -cs solv_p.gro -o MIX.gro -p topol.top
 
 # Make 0q files
-python 10-prepare-0q-topology.py
+python 11-prepare-0q-topology.py
 
 
 ### 12. Production MD
@@ -152,14 +152,15 @@ gmx trjconv -s MIX_md.tpr -f MIX_md.xtc -o MIX_noPBC.xtc -pbc mol -center
 bash traj_extract.sh
 
 # Move to final folder
-cp *.xvg Molecule-solv.itp ../08_final_results/
+cp *.xvg itp/Molecule-solv.itp ../08_final_results/
 cd ../08_final_results/
 
 # Calculate electric fields
-python 11-analyze_fields.py
+python 12-analyze_fields.py
 # this will save a .png and .csv with the final field results
 
 ################## Cleanup ####################
+
 
 #cp -r * $MYHOME
 #cd $MYHOME
