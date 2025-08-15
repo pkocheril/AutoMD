@@ -1,7 +1,0 @@
-; This is temp.top
-[ system ]
-Benzonitrile_opt
-
-[ molecules ]
-; Molecule      nmols
-Benzonitrile_opt     1
