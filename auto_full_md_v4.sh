@@ -126,7 +126,8 @@ bash full_auto_solvent.sh
 cd ../07_production_md/
 cp ../05_solute_params/temp.top ../05_solute_params/Molecule.gro ../06_solvent_md/*_p.gro ./
 mkdir itp
-cp ../05_solute_params/sys.itp ../05_solute_params/Molecule-solv.itp ../06_solvent_md/*.itp ../06/solvent_md/solv.top ./itp/
+cp ../06/solvent_md/solv.top ./itp/
+cp ../05_solute_params/sys.itp ../05_solute_params/Molecule-solv.itp ../06_solvent_md/*.itp ./itp/
 python 09-finalize_system_topology.py
 
 # Make solvated box
