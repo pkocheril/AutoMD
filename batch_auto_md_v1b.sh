@@ -105,8 +105,8 @@ for dir in */; do
 	cp -r ../04_solvent_md/ ../05_production_md/ ../06_final_results/ ./
 	cd 04_solvent_md/
 	
-	# Copy solvent .gro and .top files
-	cp ../../00_inputs/*.gro ../../00_inputs/*.top ./
+	# Move solvent .gro and .top files into solvent_md folder
+	mv ../*.gro ../*.top ./
 	python 05-solvent_topology_edit.py
 	
 	# Build solvent box with density specified in Solvent_properties.csv
