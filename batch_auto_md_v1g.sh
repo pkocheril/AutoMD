@@ -79,6 +79,8 @@ cd ../../03_solute_params/
 python 03-extract_top_itp_sections.py
 cp ../02_resp/all.resp ./
 python 04-write_charges.py
+# Return to working directory
+cd ../
 
 
 ##### Part 2: Loop over solvents #####
