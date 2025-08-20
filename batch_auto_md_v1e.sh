@@ -94,11 +94,11 @@ F6="06_final_results/"
 
 for dir in */; do
 	if [[ $dir == "$F0" ]] || \ 
-	[[ $dir == "$F1" ]] ||
-	[[ $dir == "$F2" ]] ||
-	[[ $dir == "$F3" ]] ||
-	[[ $dir == "$F4" ]] ||
-	[[ $dir == "$F5" ]] ||
+	[[ $dir == "$F1" ]] || \
+	[[ $dir == "$F2" ]] || \
+	[[ $dir == "$F3" ]] || \
+	[[ $dir == "$F4" ]] || \
+	[[ $dir == "$F5" ]] || \
 	[[ $dir == "$F6" ]] ; then
 		continue # skip this folder
     fi
