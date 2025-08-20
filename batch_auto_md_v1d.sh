@@ -32,7 +32,7 @@
 ### 1. Copy starting template and move files
 
 cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Starting_template/* ./
-mv *.gro *.top *.cd* 00_inputs/
+mv *.cd* 00_inputs/
 cd 01_QM/
 
 

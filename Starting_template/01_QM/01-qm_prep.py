@@ -236,12 +236,12 @@ if __name__ == "__main__":
     run_cmd([G16_PATH, str(gjf_path)])
     print("Gaussian calculation completed successfully.")
     
-    # Convert Gaussian outputs
-    found_chks = look_for_files("chk")
-    for i, file in found_chks:
-        file_base = file.strip('.chk')
-        run_cmd([FORMCHK_PATH, str(file)])
-        run_cmd([OBABEL_PATH, str(f"{file_base}.fchk"), "-O", str(f"{file_base}.mol2")])
+    ## Convert Gaussian outputs
+    #found_chks = look_for_files("chk")
+    #for i, file in found_chks:
+    #    file_base = file.strip('.chk')
+    #    run_cmd([FORMCHK_PATH, str(file)])
+    #    run_cmd([OBABEL_PATH, str(f"{file_base}.fchk"), "-O", str(f"{file_base}.mol2")])
         
 
 
