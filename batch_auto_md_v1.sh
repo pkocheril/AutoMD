@@ -2,7 +2,7 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=24:00:00   # walltime, maximum 168 hours; at least 2 hours, probably 12-24
+#SBATCH --time=12:00:00   # walltime, maximum 168 hours; at least 2 hours, probably 12-24
 #SBATCH --ntasks=24   # number of processor cores (i.e. tasks); at least 4, probably 16-20
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --mem-per-cpu=4G   # memory per CPU core
@@ -17,12 +17,12 @@
 
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
-MYHOME=`pwd`
-MYTMP="/resnick/scratch/$USER/scratch/$SLURM_JOBID"
-mkdir -p $MYTMP
-cp -r * $MYTMP/.
-cd $MYTMP
-echo "Start time at `date`"
+#MYHOME=`pwd`
+#MYTMP="/resnick/scratch/$USER/scratch/$SLURM_JOBID"
+#mkdir -p $MYTMP
+#cp -r * $MYTMP/.
+#cd $MYTMP
+#echo "Start time at `date`"
 
 
 ################## Main script ####################
@@ -168,8 +168,8 @@ done
 ## Remove extra template folders
 #rm -r 04_solvent_md/ 05_production_md/ 06_final_results/
 
-cp -r * $MYHOME
-cd $MYHOME
-#rm -r $MYTMP
-echo "All ends at `date`" 
+#cp -r * $MYHOME
+#cd $MYHOME
+##rm -r $MYTMP
+#echo "All ends at `date`" 
 

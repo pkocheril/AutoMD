@@ -52,19 +52,3 @@ output_file = f"{molname}-solv.itp"
 with open(output_file, "w") as fout:
     fout.writelines(mod_lines)
 
-# names = list(resp_df.columns)
-
-# # Replace charges for each solvent and write to new .itp files
-# for name in names:
-#     charges = resp_df[name].tolist()
-#     mod_lines = lines.copy()
-
-#     for i, idx in enumerate(range(start_idx, end_idx + 1)):
-#         parts = mod_lines[idx].split()
-#         if len(parts) >= 8:
-#             parts[6] = f"{charges[i]:.6f}"  # 7th column (index 6)
-#             mod_lines[idx] = " ".join(parts) + "\n"
-
-#     output_file = f"{molname}-{name}.itp"
-#     with open(output_file, "w") as fout:
-#         fout.writelines(mod_lines)

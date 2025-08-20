@@ -183,54 +183,6 @@ def gaussian_fit(data, hist_bins=HIST_BINS):
 # ================================
 # Auto-detection of nitriles/carbonyls
 # ================================
-# def guess_pairs(atom_names, atom_numbers, bonds, coord,
-#                 nitrile_range=(NITRILE_MIN, NITRILE_MAX),
-#                 carbonyl_range=(CARBONYL_MIN, CARBONYL_MAX)):
-#     """
-#     Guess nitrile (C≡N) and carbonyl (C=O) pairs using connectivity + average bond lengths.
-#     Returns dict with keys 'nitrile' and 'carbonyl' (each a list of (i,j) with i<j).
-#     """
-#     # Average structure
-#     avg_pos = avg_positions_from_coord(coord)
-#     # Bond lengths
-#     bond_len = distances_for_bonds(avg_pos, bonds)
-#     # Degree (connectivity count) per atom
-#     deg = {n: 0 for n in atom_numbers}
-#     for a, b in bonds:
-#         deg[a] += 1; deg[b] += 1
-
-#     # Element tags
-#     elem = {atom_numbers[i]: element_from_name(atom_names[i]) for i in range(len(atom_numbers))}
-
-#     nitriles, carbonyls = [], []
-#     for (a, b), d in bond_len.items():
-#         ea, eb = elem.get(a, '?'), elem.get(b, '?')
-#         pair = (a, b) if a < b else (b, a)
-
-#         # C≡N: C-N distance short (~1.15 Å), N degree often 1, C may be degree 2 (sp)
-#         if {ea, eb} == {'C', 'N'} and nitrile_range[0] <= d <= nitrile_range[1]:
-#             # prefer the (C, N) orientation (store smaller first anyway)
-#             # optional degree check: allow if min(deg) == 1 or both reasonable
-#             if deg[a] == 1 or deg[b] == 1:
-#                 nitriles.append(pair)
-
-#         # C=O: C-O ~1.20–1.30 Å
-#         if {ea, eb} == {'C', 'O'} and carbonyl_range[0] <= d <= carbonyl_range[1]:
-#             carbonyls.append(pair)
-
-#     # Deduplicate while preserving order
-#     def dedup(seq): 
-#         seen = set(); out = []
-#         for x in seq:
-#             if x not in seen:
-#                 out.append(x); seen.add(x)
-#         return out
-
-#     return {
-#         'nitrile': dedup(nitriles),
-#         'carbonyl': dedup(carbonyls),
-#     }
-
 # Add failsafe in case no pairs are found
 def guess_pairs(atom_names, atom_numbers, bonds, coord,
                 nitrile_range=(NITRILE_MIN, NITRILE_MAX),

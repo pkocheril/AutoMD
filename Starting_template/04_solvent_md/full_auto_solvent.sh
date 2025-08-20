@@ -1,19 +1,3 @@
-#for file in *box*.gro; do
-#    [ -f $file ] || continue
-#    rm $file
-#done
-
-#for file in "#*box*#"; do
-#    [ -f $file ] || continue
-#    rm $file
-#done
-
-#for file in "#*solv*#"; do
-#    [ -f $file ] || continue
-#    rm $file
-#done
-
-
 for file in solv*.gro; do
     [ -f $file ] || continue
     gmx grompp -f md/em.mdp -c $file -p solv.top -o ${file%.gro}_em.tpr -maxwarn 0
