@@ -128,9 +128,9 @@ for dir in */; do
 	### 9. Production MD
 	
 	cd ../05_production_md/
-	cp ../03_solute_params/temp.top ../03_solute_params/Molecule.gro ../04_solvent_md/*_p.gro ./
+	cp ../../03_solute_params/temp.top ../../03_solute_params/Molecule.gro ../04_solvent_md/*_p.gro ./
 	mkdir itp
-	cp ../03_solute_params/sys.itp ../03_solute_params/Molecule-solv.itp ../04_solvent_md/*.itp ../04_solvent_md/solv.top ./itp/
+	cp ../../03_solute_params/sys.itp ../../03_solute_params/Molecule-solv.itp ../04_solvent_md/*.itp ../04_solvent_md/solv.top ./itp/
 	python 08-finalize_system_topology.py
 	
 	# Make solvated box
