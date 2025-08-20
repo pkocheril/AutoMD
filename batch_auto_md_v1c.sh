@@ -43,6 +43,12 @@ python 01-qm_prep.py --cores $(nproc) --mem $(nmem)
 
 ### 3. Run Multiwfn for RESP
 
+for file in *.chk; do
+    [ -f $file ] || continue
+    formchk $file
+    obabel ${file%.chk}.fchk -O ${file%.chk}.mol2
+done
+New
 for file in *.fchk; do
     [ -f $file ] || continue
     echo -e "7\n18\n1\ny\n" | Multiwfn $file
@@ -105,8 +111,8 @@ for dir in */; do
 	cp -r ../04_solvent_md/ ../05_production_md/ ../06_final_results/ ./
 	cd 04_solvent_md/
 	
-	# Move solvent .gro and .top files into solvent_md folder
-	mv ../*.gro ../*.top ./
+	# Copy solvent .gro and .top files into solvent_md folder
+	cp ../*.gro ../*.top ./
 	python 05-solvent_topology_edit.py
 	
 	# Build solvent box with density specified in Solvent_properties.csv
