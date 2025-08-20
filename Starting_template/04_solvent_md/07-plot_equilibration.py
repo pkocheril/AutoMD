@@ -69,7 +69,7 @@ for ax, (data, title, style) in zip(axes, datasets):
 
 plt.tight_layout()
 
-save_path = "../08_final_results/solvent_equilibration.png"
+save_path = "../06_final_results/solvent_equilibration.png"
 os.makedirs(os.path.dirname(save_path), exist_ok=True)
 plt.savefig(save_path, dpi=300)
 plt.close(fig)

@@ -2,8 +2,8 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=12:00:00   # walltime, maximum 168 hours; at least 2 hours, probably 12-24
-#SBATCH --ntasks=24   # number of processor cores (i.e. tasks); at least 4, probably 16-20
+#SBATCH --time=100:00:00   # walltime, maximum 168 hours
+#SBATCH --ntasks=24   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --mem-per-cpu=4G   # memory per CPU core
 #SBATCH -J "Automated MD"   # job name
@@ -12,11 +12,11 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 
+# LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
+
 
 ################## Setup ####################
 
-
-# LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
 #MYHOME=`pwd`
 #MYTMP="/resnick/scratch/$USER/scratch/$SLURM_JOBID"
 #mkdir -p $MYTMP
@@ -30,25 +30,28 @@
 ##### Part 1: Parametrize molecule #####
 
 ### 1. Copy starting template and move files
+# /project/
 
-cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Starting_template/* ./
+cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
 mv *.cd* 00_inputs/
 cd 01_QM/
 
 
 ### 2. Run Gaussian calculations
+# /project/01_QM/
 
 python 01-qm_prep.py --cores $(nproc) --mem $(nmem)
 
 
 ### 3. Run Multiwfn for RESP
+# runs in /project/01_QM/
 
 for file in *.chk; do
     [ -f $file ] || continue
     formchk $file
     obabel ${file%.chk}.fchk -O ${file%.chk}.mol2
 done
-New
+
 for file in *.fchk; do
     [ -f $file ] || continue
     echo -e "7\n18\n1\ny\n" | Multiwfn $file
@@ -56,13 +59,16 @@ done
 
 
 ### 4. RESP
+# /project/02_resp/
 
 cp *SP*.chg ../02_resp/
 cd ../02_resp/
 python 02-resp.py
 
 ### 5. Parametrize with Sobtop
+# /project/02_resp/sobtop/
 
+cp -r /resnick/groups/WeiLab/software/sobtop_1.0 ./sobtop/
 cp ../01_QM/Molecule_optfreq.fchk ../01_QM/Molecule_optfreq.mol2 ./sobtop/
 cd sobtop/
 
@@ -71,6 +77,7 @@ echo -e "2\n\n1\n2\n2\nMolecule_optfreq.fchk\n\n\n0\n" | ./sobtop Molecule_optfr
 
 
 ### 6. Move and modify molecule topology files
+# /project/03_solute_params
 
 cp Molecule_optfreq.gro ../../03_solute_params/Molecule.gro
 cp Molecule_optfreq.itp ../../03_solute_params/Molecule.itp
@@ -84,6 +91,7 @@ cd ../
 
 
 ##### Part 2: Loop over solvents #####
+# /project/
 
 # Folders to ignore
 Folder0="00_inputs/"
@@ -103,6 +111,7 @@ for dir in */; do
 	
 	
 	### 7. Build a solvent box
+	# /project/solvent#/04_solvent_md/
 	
 	cp -r ../04_solvent_md/ ../05_production_md/ ../06_final_results/ ./
 	cd 04_solvent_md/
@@ -117,6 +126,7 @@ for dir in */; do
 	
 	
 	### 8. Solvent equilibration
+	# /project/solvent#/04_solvent_md/
 	
 	bash full_auto_solvent.sh
 	
@@ -126,6 +136,7 @@ for dir in */; do
 	
 	
 	### 9. Production MD
+	# /project/solvent#/05_production_md
 	
 	cd ../05_production_md/
 	cp ../../03_solute_params/temp.top ../../03_solute_params/Molecule.gro ../04_solvent_md/*_p.gro ./
@@ -149,6 +160,7 @@ for dir in */; do
 	
 	
 	### 10. Post-run analysis
+	# /project/solvent#/06_final_analysis/
 	
 	bash traj_extract.sh
 
@@ -167,8 +179,9 @@ done
 
 ################## Cleanup ####################
 
-## Remove extra template folders
-#rm -r 04_solvent_md/ 05_production_md/ 06_final_results/
+# Remove extra template folders
+# /project/
+rm -r 04_solvent_md/ 05_production_md/ 06_final_results/
 
 #cp -r * $MYHOME
 #cd $MYHOME

@@ -1,6 +1,6 @@
 for file in *MIX.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/em.mdp -c $file -p topol.top -o ${file%.gro}_em.tpr -maxwarn 0
+    gmx grompp -f md/em.mdp -c $file -p topol.top -o ${file%.gro}_em.tpr -maxwarn 1
 done
 
 for file in *em.tpr; do
@@ -10,7 +10,7 @@ done
 
 for file in *_em.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/v.mdp -c $file -p topol.top -o ${file%_em.gro}_v.tpr -maxwarn 0
+    gmx grompp -f md/v.mdp -c $file -p topol.top -o ${file%_em.gro}_v.tpr -maxwarn 1
 done
 
 for file in *v.tpr; do
@@ -20,7 +20,7 @@ done
 
 for file in *v.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/p.mdp -c $file -t ${file%.gro}.cpt -p topol.top -o ${file%_v.gro}_p.tpr -maxwarn 0
+    gmx grompp -f md/p.mdp -c $file -t ${file%.gro}.cpt -p topol.top -o ${file%_v.gro}_p.tpr -maxwarn 1
 done
 
 for file in *p.tpr; do
@@ -32,14 +32,14 @@ done
 # Regular
 for file in *MIX*p.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/md.mdp -c $file -t ${file%.gro}.cpt -p topol.top -o ${file%_p.gro}_md.tpr -maxwarn 0
+    gmx grompp -f md/md.mdp -c $file -t ${file%.gro}.cpt -p topol.top -o ${file%_p.gro}_md.tpr -maxwarn 1
 done
 # (want to ignore "solv_p.gro")
 
 # 0q
 for file in *MIX*p.gro; do
     [ -f $file ] || continue
-    gmx grompp -f md/md.mdp -c $file -t ${file%.gro}.cpt -p topol_0q.top -o ${file%_p.gro}_0q.tpr -maxwarn 1
+    gmx grompp -f md/md.mdp -c $file -t ${file%.gro}.cpt -p topol_0q.top -o ${file%_p.gro}_0q.tpr -maxwarn 2
 done
 
 for file in *md.tpr; do
