@@ -112,13 +112,13 @@ for dir in */; do
 	python 05-solvent_topology_edit.py
 	
 	# Build solvent box with density specified in Solvent_properties.csv
-	python 08-build_box.py
+	python 06-build_box.py
 	# after this, you can visualize your solvent box with: vmd solv.gro
 	
 	
 	### 8. Solvent equilibration
 	
-	bash full_auto.sh
+	bash full_auto_solvent.sh
 	
 	# Visualize density and temperature equilibrations
 	python 07-plot_equilibration.py
