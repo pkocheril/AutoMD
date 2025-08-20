@@ -84,22 +84,16 @@ python 04-write_charges.py
 ##### Part 2: Loop over solvents #####
 
 # Folders to ignore
-F0="00_inputs/"
-F1="01_QM/"
-F2="02_resp/"
-F3="03_solute_params/"
-F4="04_solvent_md/"
-F5="05_production_md/"
-F6="06_final_results/"
+Folder0="00_inputs/"
+Folder1="01_QM/"
+Folder2="02_resp/"
+Folder3="03_solute_params/"
+Folder4="04_solvent_md/"
+Folder5="05_production_md/"
+Folder6="06_final_results/"
 
 for dir in */; do
-	if [[ $dir == "$F0" ]] || \ 
-	[[ $dir == "$F1" ]] || \
-	[[ $dir == "$F2" ]] || \
-	[[ $dir == "$F3" ]] || \
-	[[ $dir == "$F4" ]] || \
-	[[ $dir == "$F5" ]] || \
-	[[ $dir == "$F6" ]] ; then
+	if [[ $dir == "$Folder0" ]] || [[ $dir == "$Folder1" ]] || [[ $dir == "$Folder2" ]] || [[ $dir == "$Folder3" ]] || [[ $dir == "$Folder4" ]] || [[ $dir == "$Folder5" ]] || [[ $dir == "$Folder6" ]] ; then
 		continue # skip this folder
     fi
 	echo "Processing directory: $dir"
