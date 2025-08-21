@@ -2,10 +2,10 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=100:00:00   # walltime, maximum 168 hours
-#SBATCH --ntasks=24   # number of processor cores (i.e. tasks)
+#SBATCH --time=100:00:00   # walltime; max. 168 hours
+#SBATCH --ntasks=24   # number of processor cores (i.e. tasks); max. 32
 #SBATCH --nodes=1   # number of nodes
-#SBATCH --mem-per-cpu=4G   # memory per CPU core
+#SBATCH --mem-per-cpu=4G   # memory per CPU core; max 6 GB/core (192 GB total)
 #SBATCH -J "Automated MD"   # job name
 #SBATCH --mail-user=pkocheri@caltech.edu   # email address; update as needed
 #SBATCH --mail-type=BEGIN
@@ -16,6 +16,39 @@
 
 
 ################## Setup ####################
+
+### Set paths
+
+# Gaussian
+export g16root=/resnick/groups/WeiLab/software
+export GAUSS_SCRDIR=/resnick/groups/WeiLab/software/g16/scratch
+source /resnick/groups/WeiLab/software/g16/bsd/g16.profile
+
+# OpenBabel
+export PATH="$PATH:/resnick/groups/WeiLab/software/openbabel/bin/"
+export PATH="$PATH:/resnick/groups/WeiLab/software/openbabel/lib/"
+export PATH="$PATH:/resnick/groups/WeiLab/software/openbabel/lib64/"
+export LD_LIBRARY_PATH=/resnick/groups/WeiLab/software/openbabel/lib64:$LD_LIBRARY_PATH
+
+
+# Multiwfn
+export Multiwfnpath=/resnick/groups/WeiLab/software/Multiwfn_3.8_dev_bin_Linux
+export PATH="$PATH:/resnick/groups/WeiLab/software/Multiwfn_3.8_dev_bin_Linux"
+
+# GROMACS
+source /resnick/groups/WeiLab/software/gromacs/bin/GMXRC
+
+# VMD
+export PATH="$PATH:/resnick/groups/WeiLab/software/vmd/bin/"
+
+# Python
+pip install scipy numpy matplotlib
+
+# Custom
+export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
+
+
+### Move to a scratch directory
 
 #MYHOME=`pwd`
 #MYTMP="/resnick/scratch/$USER/scratch/$SLURM_JOBID"

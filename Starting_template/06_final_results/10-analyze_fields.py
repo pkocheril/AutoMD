@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 14 15:57:44 2025
+Created on Thu Aug 21 09:25:48 2025
 
 @author: pkocheril
 """
@@ -17,12 +17,16 @@ from scipy.optimize import least_squares
 # ================================
 # Constants & thresholds
 # ================================
-MV_CM_CONVERSION = 0.1036427
+MV_CM_CONVERSION = -0.1036427 # negative to get the sign convention
 HIST_BINS = 128
 
-# Bond-length (Å) heuristics for auto-detection (on time-averaged structure)
-NITRILE_MIN, NITRILE_MAX = 1.10, 1.22   # C≡N
-CARBONYL_MIN, CARBONYL_MAX = 1.18, 1.32 # C=O
+# Heuristics in Å (fallback geometry)
+NITRILE_MIN_A, NITRILE_MAX_A = 1.10, 1.22   # C≡N
+CARBONYL_MIN_A, CARBONYL_MAX_A = 1.18, 1.32 # C=O
+
+# Convert to nm for .itp [ bonds ] (r0 is in nm)
+NITRILE_MIN_NM, NITRILE_MAX_NM = NITRILE_MIN_A * 0.1, NITRILE_MAX_A * 0.1
+CARBONYL_MIN_NM, CARBONYL_MAX_NM = CARBONYL_MIN_A * 0.1, CARBONYL_MAX_A * 0.1
 
 # ================================
 # Utilities
@@ -38,6 +42,7 @@ def avg_positions_from_coord(coord: np.ndarray) -> np.ndarray:
     return xyz.mean(axis=0)
 
 def distances_for_bonds(avg_pos: np.ndarray, bonds: list[tuple[int,int]]) -> dict[tuple[int,int], float]:
+    """Return distances (Å) for each bond pair (1-based indices)."""
     d = {}
     for a, b in bonds:
         va = avg_pos[a-1]
@@ -45,62 +50,80 @@ def distances_for_bonds(avg_pos: np.ndarray, bonds: list[tuple[int,int]]) -> dic
         d[(a, b)] = float(np.linalg.norm(va - vb))
     return d
 
+def dedup_pairs(seq):
+    seen = set(); out = []
+    for x in seq:
+        if x not in seen:
+            out.append(x); seen.add(x)
+    return out
+
 # ================================
 # File parsing
 # ================================
 def read_itp(filename):
     """
-    Parse an .itp file: atoms (number, name, charge) and bonds (pairs of atom numbers).
+    Parse an .itp file:
+      - [ atoms ] -> atom_numbers, atom_names, charges
+      - [ bonds ] -> bonds (pairs) and bonds_meta with r0 (nm) + label from comment
     Returns:
       atom_names (list[str]),
       atom_numbers (np.ndarray[int]),
       charges (np.ndarray[float]),
-      bonds (list[tuple[int,int]])
+      bonds (list[tuple[int,int]]),
+      bonds_meta (list[dict] with keys: i, j, r0_nm, label)
     """
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    # Section indices
+    # Locate sections
     atoms_start = atoms_end = bonds_start = bonds_end = None
     for i, line in enumerate(lines):
-        if '[ atoms ]' in line:
-            atoms_start = i + 2  # typical spacing: header + one blank/comment
-        if '[ bonds ]' in line:
-            bonds_start = i + 2
-            if atoms_end is None:
-                atoms_end = i - 2
+        if '[ atoms' in line:
+            atoms_start = i + 1
+        if '[ bonds' in line:
+            bonds_start = i + 1
+            if atoms_end is None and atoms_start is not None:
+                atoms_end = i - 1
 
     # Find end of bonds (next section or EOF)
     if bonds_start is not None:
+        bonds_end = len(lines) - 1
         for j in range(bonds_start, len(lines)):
-            if '[' in lines[j] and ']' in lines[j] and j > bonds_start:
-                bonds_end = j - 2
+            if j == bonds_start: 
+                continue
+            if '[' in lines[j] and ']' in lines[j]:
+                bonds_end = j - 1
                 break
-        if bonds_end is None:
-            bonds_end = len(lines) - 1
 
-    if atoms_start is None or atoms_end is None:
+    if atoms_start is None:
         raise ValueError("Could not locate a valid [ atoms ] section in the .itp")
+    if atoms_end is None:
+        # until next section or EOF
+        atoms_end = len(lines) - 1
+        for j in range(atoms_start, len(lines)):
+            if j == atoms_start:
+                continue
+            if '[ ' in lines[j] and ']' in lines[j]:
+                atoms_end = j - 1
+                break
 
+    # --- Parse [ atoms ] ---
     atom_names, atom_numbers, charges = [], [], []
     for m in range(atoms_start, atoms_end + 1):
         row = lines[m].strip()
-        if not row or row.startswith(('#',';','@','&')):
+        if not row or row.startswith(('#',';','@','&','[')):
             continue
         temp = row.split()
-
-        # GROMACS [ atoms ] canonical columns (most forcefields):
-        # nr  type  resnr  resid  atom  cgnr  charge  mass  (…)
-        # We’ll try robust parsing:
+        # Expected (most forcefields):
+        # nr  type  resnr  resname  atom  cgnr  charge  mass ...
         try:
-            nr = int(temp[0])                   # atom number in topology
-            name = temp[4]                      # atom name
-            charge = float(temp[6])             # charge (you fixed this earlier)
-        except (ValueError, IndexError):
-            # Fallback to previous behavior if layout differs:
-            name = temp[5]
-            nr = int(''.join([c for c in name if c.isdigit()]) or '0')
+            nr = int(temp[0])
+            name = temp[4]
             charge = float(temp[6])
+        except (ValueError, IndexError):
+            # Fallback: try alternate offsets (rare)
+            # (Keep this conservative to avoid mis-parsing)
+            continue
         atom_numbers.append(nr)
         atom_names.append(name)
         charges.append(charge)
@@ -108,21 +131,56 @@ def read_itp(filename):
     atom_numbers = np.asarray(atom_numbers, dtype=int)
     charges = np.asarray(charges, dtype=float)
 
+    # --- Parse [ bonds ] ---
     bonds = []
+    bonds_meta = []
     if bonds_start is not None and bonds_end is not None:
         for m in range(bonds_start, bonds_end + 1):
-            row = lines[m].strip()
-            if not row or row.startswith(('#',';','@','&','[')):
-                continue
-            parts = row.split()
-            # First two columns are the bonded atom numbers in most .itp formats
-            try:
-                a = int(parts[0]); b = int(parts[1])
-                bonds.append((a, b) if a < b else (b, a))
-            except (ValueError, IndexError):
+            line = lines[m].strip()
+            if not line or line.startswith(('#',';','@','&','[')):
                 continue
 
-    return atom_names, atom_numbers, charges, bonds
+            # Split off comment (everything after ';')
+            if ';' in line:
+                data_part, comment_part = line.split(';', 1)
+                comment = comment_part.strip()
+            else:
+                data_part, comment = line, ''
+
+            parts = data_part.split()
+            if len(parts) < 2:
+                continue
+
+            # First two columns are atom indices
+            try:
+                i_atom = int(parts[0]); j_atom = int(parts[1])
+            except ValueError:
+                continue
+            pair = (i_atom, j_atom) if i_atom < j_atom else (j_atom, i_atom)
+            bonds.append(pair)
+
+            # 4th column r0 (nm) if present
+            r0_nm = None
+            if len(parts) >= 4:
+                try:
+                    r0_nm = float(parts[3])
+                except ValueError:
+                    r0_nm = None
+
+            # Extract a simple bond label like "C-N", "N-C", "C-O", "O-C" from the comment
+            label = None
+            if comment:
+                c = comment.upper()
+                # be permissive about punctuation around the token
+                if 'C-N' in c or 'N-C' in c:
+                    label = 'C-N'
+                elif 'C-O' in c or 'O-C' in c:
+                    label = 'C-O'
+                # (extend here if you ever want C=C, etc.)
+
+            bonds_meta.append({'i': pair[0], 'j': pair[1], 'r0_nm': r0_nm, 'label': label})
+
+    return atom_names, atom_numbers, charges, bonds, bonds_meta
 
 def ipt_xvg(filename):
     """Load an .xvg file, skipping comments/meta lines."""
@@ -138,11 +196,11 @@ def load_xvg_files():
     files = glob.glob('*.xvg')
     coord = f0 = f1 = None
     for fname in files:
-        if 'xyz.xvg' in fname:
+        if fname.endswith('xyz.xvg'):
             coord = ipt_xvg(fname)
-        elif 'f0.xvg' in fname:
+        elif fname.endswith('f0.xvg'):
             f0 = ipt_xvg(fname)
-        elif 'f1.xvg' in fname:
+        elif fname.endswith('f1.xvg'):
             f1 = ipt_xvg(fname)
     if coord is None or f0 is None or f1 is None:
         raise FileNotFoundError("Missing one or more of xyz.xvg, f0.xvg, f1.xvg")
@@ -181,100 +239,120 @@ def gaussian_fit(data, hist_bins=HIST_BINS):
     return edges, N, fcurve, fitval
 
 # ================================
-# Auto-detection of nitriles/carbonyls
+# Pair detection
 # ================================
-# Add failsafe in case no pairs are found
-def guess_pairs(atom_names, atom_numbers, bonds, coord,
-                nitrile_range=(NITRILE_MIN, NITRILE_MAX),
-                carbonyl_range=(CARBONYL_MIN, CARBONYL_MAX)):
-    """
-    Guess nitrile (C≡N) and carbonyl (C=O) pairs using connectivity + average bond lengths.
-    If none meet the distance criteria, fallback to closest C-N and C-O bonds.
-    """
+def pairs_from_itp_meta(bonds_meta,
+                        nitrile_nm=(NITRILE_MIN_NM, NITRILE_MAX_NM),
+                        carbonyl_nm=(CARBONYL_MIN_NM, CARBONYL_MAX_NM)):
+    """Select nitrile/carbonyl pairs using r0 (nm) + comment label from [ bonds ]."""
+    nitriles = []
+    carbonyls = []
+    for b in bonds_meta:
+        i, j, r0, label = b['i'], b['j'], b['r0_nm'], (b['label'] or '')
+        if r0 is None or not label:
+            continue
+        pair = (i, j) if i < j else (j, i)
+        # nitrile: label says C-N and r0 within nitrile window
+        if label == 'C-N' and (nitrile_nm[0] <= r0 <= nitrile_nm[1]):
+            nitriles.append(pair)
+        # carbonyl: label says C-O and r0 within carbonyl window
+        if label == 'C-O' and (carbonyl_nm[0] <= r0 <= carbonyl_nm[1]):
+            carbonyls.append(pair)
+    return {'nitrile': dedup_pairs(nitriles), 'carbonyl': dedup_pairs(carbonyls)}
+
+def guess_pairs_geometry(atom_names, atom_numbers, bonds, coord,
+                         nitrile_range_A=(NITRILE_MIN_A, NITRILE_MAX_A),
+                         carbonyl_range_A=(CARBONYL_MIN_A, CARBONYL_MAX_A)):
+    """Fallback: guess pairs from geometry (Å) and elements."""
     avg_pos = avg_positions_from_coord(coord)
-    bond_len = distances_for_bonds(avg_pos, bonds)
+    bond_len_A = distances_for_bonds(avg_pos, bonds)
     deg = {n: 0 for n in atom_numbers}
     for a, b in bonds:
         deg[a] += 1; deg[b] += 1
     elem = {atom_numbers[i]: element_from_name(atom_names[i]) for i in range(len(atom_numbers))}
 
     nitriles, carbonyls = [], []
-
-    for (a, b), d in bond_len.items():
+    for (a, b), dA in bond_len_A.items():
         ea, eb = elem.get(a, '?'), elem.get(b, '?')
         pair = (a, b) if a < b else (b, a)
-        # Nitrile detection
-        if {ea, eb} == {'C', 'N'} and nitrile_range[0] <= d <= nitrile_range[1]:
+        # nitrile candidate: C-N distance in window, and one atom terminal
+        if {ea, eb} == {'C', 'N'} and nitrile_range_A[0] <= dA <= nitrile_range_A[1]:
             if deg[a] == 1 or deg[b] == 1:
                 nitriles.append(pair)
-        # Carbonyl detection
-        if {ea, eb} == {'C', 'O'} and carbonyl_range[0] <= d <= carbonyl_range[1]:
+        # carbonyl candidate: C-O distance in window
+        if {ea, eb} == {'C', 'O'} and carbonyl_range_A[0] <= dA <= carbonyl_range_A[1]:
             carbonyls.append(pair)
 
-    # Fallbacks if no pairs detected
+    # Fallbacks to the closest if still empty
     if not nitriles:
-        # pick C-N bond with shortest distance
-        cn_bonds = [(pair, d) for pair, d in bond_len.items() if set([elem[pair[0]], elem[pair[1]]]) == {'C','N'}]
-        if cn_bonds:
-            closest = min(cn_bonds, key=lambda x: x[1])
-            nitriles.append(closest[0])
+        cn = [((a,b), dA) for (a,b), dA in bond_len_A.items()
+              if {elem.get(a,'?'), elem.get(b,'?')} == {'C','N'}]
+        if cn:
+            nitriles.append(min(cn, key=lambda x: x[1])[0])
     if not carbonyls:
-        # pick C-O bond with shortest distance
-        co_bonds = [(pair, d) for pair, d in bond_len.items() if set([elem[pair[0]], elem[pair[1]]]) == {'C','O'}]
-        if co_bonds:
-            closest = min(co_bonds, key=lambda x: x[1])
-            carbonyls.append(closest[0])
+        co = [((a,b), dA) for (a,b), dA in bond_len_A.items()
+              if {elem.get(a,'?'), elem.get(b,'?')} == {'C','O'}]
+        if co:
+            carbonyls.append(min(co, key=lambda x: x[1])[0])
 
-    # Deduplicate
-    def dedup(seq): 
-        seen = set(); out = []
-        for x in seq:
-            if x not in seen:
-                out.append(x); seen.add(x)
-        return out
-
-    return {
-        'nitrile': dedup(nitriles),
-        'carbonyl': dedup(carbonyls),
-    }
-
+    return {'nitrile': dedup_pairs(nitriles), 'carbonyl': dedup_pairs(carbonyls)}
 
 # ================================
 # Main
 # ================================
 def main():
-    parser = argparse.ArgumentParser(description="Electric field analysis with auto-detection of nitriles/carbonyls.")
+    parser = argparse.ArgumentParser(description="Electric field analysis with robust nitrile/carbonyl detection from .itp bonds.")
     parser.add_argument("--pairs", nargs="*", default=None,
-                        help="Atom pairs to analyze, e.g., 7,8 8,7 10,15. If omitted, auto-detect pairs.")
+                        help="Atom pairs to analyze, e.g., 7,8 10,15. If omitted, auto-detect pairs.")
     parser.add_argument("--hist-bins", type=int, default=HIST_BINS, help="Histogram bins (default 128).")
     parser.add_argument("--save-prefix", default="electric_field", help="Prefix for output files.")
-    parser.add_argument("--nitrile-range", default=f"{NITRILE_MIN},{NITRILE_MAX}",
-                        help="Å range for nitrile detection, e.g., 1.10,1.22")
-    parser.add_argument("--carbonyl-range", default=f"{CARBONYL_MIN},{CARBONYL_MAX}",
-                        help="Å range for carbonyl detection, e.g., 1.18,1.32")
+    # Allow customizing detection windows (Å for geometry, nm for .itp)
+    parser.add_argument("--nitrile-range-A", default=f"{NITRILE_MIN_A},{NITRILE_MAX_A}",
+                        help="Å range for nitrile (geometry fallback), e.g., 1.10,1.22")
+    parser.add_argument("--carbonyl-range-A", default=f"{CARBONYL_MIN_A},{CARBONYL_MAX_A}",
+                        help="Å range for carbonyl (geometry fallback), e.g., 1.18,1.32")
+    parser.add_argument("--nitrile-range-nm", default=f"{NITRILE_MIN_NM:.6f},{NITRILE_MAX_NM:.6f}",
+                        help="nm range for nitrile (from .itp bonds), e.g., 0.110000,0.122000")
+    parser.add_argument("--carbonyl-range-nm", default=f"{CARBONYL_MIN_NM:.6f},{CARBONYL_MAX_NM:.6f}",
+                        help="nm range for carbonyl (from .itp bonds), e.g., 0.118000,0.132000")
     args = parser.parse_args()
 
-    nitrile_range = tuple(map(float, args.nitrile_range.split(',')))
-    carbonyl_range = tuple(map(float, args.carbonyl_range.split(',')))
+    nitrile_range_A = tuple(map(float, args.nitrile_range_A.split(',')))
+    carbonyl_range_A = tuple(map(float, args.carbonyl_range_A.split(',')))
+    nitrile_range_nm = tuple(map(float, args.nitrile_range_nm.split(',')))
+    carbonyl_range_nm = tuple(map(float, args.carbonyl_range_nm.split(',')))
 
     # Load inputs
     itp_files = [f for f in os.listdir() if f.endswith('.itp')]
     if not itp_files:
         raise FileNotFoundError("No .itp file found in current directory.")
-    atom_names, atom_idx, chg, bonds = read_itp(itp_files[0])
+    atom_names, atom_idx, chg, bonds, bonds_meta = read_itp(itp_files[0])
     coord, f0, f1 = load_xvg_files()
 
     # Decide pairs
     if args.pairs:
         pairs = [tuple(map(int, p.split(","))) for p in args.pairs]
+        source = "manual (--pairs)"
     else:
-        guessed = guess_pairs(atom_names, atom_idx, bonds, coord,
-                              nitrile_range=nitrile_range, carbonyl_range=carbonyl_range)
-        # Prioritize nitriles, then carbonyls
-        pairs = guessed['nitrile'] + guessed['carbonyl']
+        # 1) Prefer .itp-based detection (label + r0 in nm)
+        picked = pairs_from_itp_meta(bonds_meta,
+                                     nitrile_nm=nitrile_range_nm,
+                                     carbonyl_nm=carbonyl_range_nm)
+        pairs = picked['nitrile'] + picked['carbonyl']
+        source = "itp-label"
+        # 2) Fallback: geometry heuristics
+        if not pairs:
+            picked = guess_pairs_geometry(atom_names, atom_idx, bonds, coord,
+                                          nitrile_range_A=nitrile_range_A,
+                                          carbonyl_range_A=carbonyl_range_A)
+            pairs = picked['nitrile'] + picked['carbonyl']
+            source = "geometry-fallback"
         if not pairs:
             raise RuntimeError("Auto-detection found no nitrile or carbonyl pairs. "
-                               "Try adjusting --nitrile-range/--carbonyl-range or pass --pairs manually.")
+                               "Try adjusting detection windows or pass --pairs manually.")
+
+    # Simple report of what we found
+    print(f"[Auto-detect] Selected {len(pairs)} pair(s) via {source}: {pairs}")
 
     # Prepare plotting
     plt.figure(figsize=(5 * len(pairs), 4))
@@ -287,7 +365,7 @@ def main():
         # Safe atom labels (if indices exceed table length, print indices)
         def label(atom_no):
             return atom_names[atom_no-1] if 1 <= atom_no <= len(atom_names) else f"Atom{atom_no}"
-        label_pair = f"{label(pair[0])}-{label(pair[1])}"
+        label_pair = f"{label(pair[0])}-{label(pair[1])} ({pair[0]}-{pair[1]})"
 
         plt.subplot(1, len(pairs), i)
         plt.plot(edges, N, 'r.')
