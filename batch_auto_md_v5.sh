@@ -30,7 +30,6 @@ export PATH="$PATH:/resnick/groups/WeiLab/software/openbabel/lib/"
 export PATH="$PATH:/resnick/groups/WeiLab/software/openbabel/lib64/"
 export LD_LIBRARY_PATH=/resnick/groups/WeiLab/software/openbabel/lib64:$LD_LIBRARY_PATH
 
-
 # Multiwfn
 export Multiwfnpath=/resnick/groups/WeiLab/software/Multiwfn_3.8_dev_bin_Linux
 export PATH="$PATH:/resnick/groups/WeiLab/software/Multiwfn_3.8_dev_bin_Linux"
@@ -42,7 +41,7 @@ source /resnick/groups/WeiLab/software/gromacs/bin/GMXRC
 export PATH="$PATH:/resnick/groups/WeiLab/software/vmd/bin/"
 
 # Python
-pip install scipy numpy matplotlib
+pip install scipy numpy matplotlib pandas argparse glob math re subprocess Path shutil sys csv
 
 # Custom
 export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
@@ -215,6 +214,9 @@ done
 # Remove extra template folders
 # /project/
 rm -r 04_solvent_md/ 05_production_md/ 06_final_results/
+
+# Calculate electric fields for everything all in one place
+python 11-analyze_fields_batch.py
 
 #cp -r * $MYHOME
 #cd $MYHOME
