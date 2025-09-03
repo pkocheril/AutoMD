@@ -207,6 +207,8 @@ if __name__ == "__main__":
             split_charge = charge_line.split(": ")
             if split_charge[0] == 'TOTAL CHARGE':
                 mol_charge = int(split_charge[1])
+                if mol_charge > 4: # from weird parsing error with ATTO425
+                    mol_charge = 0
             else:
                 mol_charge = 0
     

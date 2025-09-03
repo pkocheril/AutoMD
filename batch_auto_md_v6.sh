@@ -2,10 +2,10 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=100:00:00   # walltime; max. 168 hours
-#SBATCH --ntasks=24   # number of processor cores (i.e. tasks); max. 32
+#SBATCH --time=100:00:00   # walltime; max 168 hours
+#SBATCH --ntasks=32   # number of processor cores (i.e. tasks); max 32
 #SBATCH --nodes=1   # number of nodes
-#SBATCH --mem-per-cpu=4G   # memory per CPU core; max 6 GB/core (192 GB total)
+#SBATCH --mem-per-cpu=6G   # memory per CPU core; max 6 GB/core (192 GB total)
 #SBATCH -J "Automated MD"   # job name
 #SBATCH --mail-user=pkocheri@caltech.edu   # email address; update as needed
 #SBATCH --mail-type=BEGIN
@@ -41,7 +41,9 @@ source /resnick/groups/WeiLab/software/gromacs/bin/GMXRC
 export PATH="$PATH:/resnick/groups/WeiLab/software/vmd/bin/"
 
 # Python
-pip install scipy numpy matplotlib pandas argparse glob math re subprocess Path shutil sys csv
+pip install python-magic scipy numpy matplotlib pandas argparse math re subprocess Path shutil sys csv
+#pip install glob
+#export PYTHONPATH="/usr/bin/python/"
 
 # Custom
 export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
@@ -64,63 +66,143 @@ export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
 ### 1. Copy starting template and move files
 # /project/
 
+# Make backup of input files/folders
+mkdir Backup
+rsync -ax --exclude Backup ./* ./Backup/
 cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
-mv *.cd* 00_inputs/
-cd 01_QM/
+mv Backup *.cd* *.*r* *.*t* 00_inputs/
+cd 00_inputs/
 
 
-### 2. Run Gaussian calculations
-# /project/01_QM/
+### 1a. Attempt to resume from previous:
+# /project/00_inputs/
 
-python 01-qm_prep.py --cores $(nproc) --mem $(nmem)
+if [[ -f all.resp && -f Molecule.gro && -f Molecule.itp && Molecule.top ]]; then
+    echo "Parametrized molecule found – preparing sys.itp and temp.top."
+    
+    cp all.resp Molecule.gro Molecule.itp Molecule.top ../03_solute_params/
+    cd ../03_solute_params/
+    
+    
+    ### 6. Move and modify molecule topology files
+	# /project/03_solute_params
+    python 03-extract_top_itp_sections.py
+	cp ../02_resp/all.resp ./
+	python 04-write_charges.py
+	
+	# Return to working directory
+	cd ../
+elif [[ -f Molecule_optfreq.chk && -f Molecule_SP_VAC.chk && -f Molecule_SP_VAC.chk ]]; then
+	echo "Gaussian outputs found – parametrizing molecule."
+	
+	cp Molecule_optfreq.chk Molecule_SP_VAC.chk Molecule_SP_water.chk ../01_QM/
+	cd ../01_QM/
+	
+	### 3. Run Multiwfn for RESP
+	# /project/01_QM/
+	
+	for file in *.chk; do
+		[ -f $file ] || continue
+	    formchk $file
+	    obabel ${file%.chk}.fchk -O ${file%.chk}.mol2
+	done
+	
+	for file in *.fchk; do
+	    [ -f $file ] || continue
+	    echo -e "7\n18\n1\ny\n" | Multiwfn $file
+	done
+	
+	
+	### 4. RESP
+	# /project/02_resp/
+
+	cp *SP*.chg ../02_resp/
+	cd ../02_resp/
+	python 02-resp.py
+	
+	
+	### 5. Parametrize with Sobtop
+	# /project/02_resp/sobtop/
+
+	cp -r /resnick/groups/WeiLab/software/sobtop_1.0 ./sobtop/
+	cp ../01_QM/Molecule_optfreq.fchk ../01_QM/Molecule_optfreq.mol2 ./sobtop/
+	cd sobtop/
+	
+	# Run sobtop, using GAFF types and mSeminario for everything
+	echo -e "2\n\n1\n2\n2\nMolecule_optfreq.fchk\n\n\n0\n" | ./sobtop Molecule_optfreq.mol2
 
 
-### 3. Run Multiwfn for RESP
-# runs in /project/01_QM/
-
-for file in *.chk; do
-    [ -f $file ] || continue
-    formchk $file
-    obabel ${file%.chk}.fchk -O ${file%.chk}.mol2
-done
-
-for file in *.fchk; do
-    [ -f $file ] || continue
-    echo -e "7\n18\n1\ny\n" | Multiwfn $file
-done
-
-
-### 4. RESP
-# /project/02_resp/
-
-cp *SP*.chg ../02_resp/
-cd ../02_resp/
-python 02-resp.py
-
-### 5. Parametrize with Sobtop
-# /project/02_resp/sobtop/
-
-cp -r /resnick/groups/WeiLab/software/sobtop_1.0 ./sobtop/
-cp ../01_QM/Molecule_optfreq.fchk ../01_QM/Molecule_optfreq.mol2 ./sobtop/
-cd sobtop/
-
-# Run sobtop, using GAFF types and mSeminario for everything
-echo -e "2\n\n1\n2\n2\nMolecule_optfreq.fchk\n\n\n0\n" | ./sobtop Molecule_optfreq.mol2
-
-
-### 6. Move and modify molecule topology files
-# /project/03_solute_params
-
-cp Molecule_optfreq.gro ../../03_solute_params/Molecule.gro
-cp Molecule_optfreq.itp ../../03_solute_params/Molecule.itp
-cp Molecule_optfreq.top ../../03_solute_params/Molecule.top
-cd ../../03_solute_params/
-python 03-extract_top_itp_sections.py
-cp ../02_resp/all.resp ./
-python 04-write_charges.py
-# Return to working directory
-cd ../
-
+	### 6. Move and modify molecule topology files
+	# /project/03_solute_params
+	
+	cp Molecule_optfreq.gro ../../03_solute_params/Molecule.gro
+	cp Molecule_optfreq.itp ../../03_solute_params/Molecule.itp
+	cp Molecule_optfreq.top ../../03_solute_params/Molecule.top
+	cd ../../03_solute_params/
+	python 03-extract_top_itp_sections.py
+	cp ../02_resp/all.resp ./
+	python 04-write_charges.py
+	
+	# Return to working directory
+	cd ../
+else 
+	echo "Beginning DFT for molecule parametrization."
+	cd ../01_QM/
+	
+	### 2. Run Gaussian calculations
+	# /project/01_QM/
+	
+	python 01-qm_prep.py --cores $(nproc) --mem $(nmem)
+	
+	
+	### 3. Run Multiwfn for RESP
+	# /project/01_QM/
+	
+	for file in *.chk; do
+		[ -f $file ] || continue
+	    formchk $file
+	    obabel ${file%.chk}.fchk -O ${file%.chk}.mol2
+	done
+	
+	for file in *.fchk; do
+	    [ -f $file ] || continue
+	    echo -e "7\n18\n1\ny\n" | Multiwfn $file
+	done
+	
+	
+	### 4. RESP
+	# /project/02_resp/
+	
+	cp *SP*.chg ../02_resp/
+	cd ../02_resp/
+	python 02-resp.py
+	
+	
+	### 5. Parametrize with Sobtop
+	# /project/02_resp/sobtop/
+	
+	cp -r /resnick/groups/WeiLab/software/sobtop_1.0 ./sobtop/
+	cp ../01_QM/Molecule_optfreq.fchk ../01_QM/Molecule_optfreq.mol2 ./sobtop/
+	cd sobtop/
+	
+	# Run sobtop, using GAFF types and mSeminario for everything
+	echo -e "2\n\n1\n2\n2\nMolecule_optfreq.fchk\n\n\n0\n" | ./sobtop Molecule_optfreq.mol2
+	
+	
+	### 6. Move and modify molecule topology files
+	# /project/03_solute_params
+	
+	cp Molecule_optfreq.gro ../../03_solute_params/Molecule.gro
+	cp Molecule_optfreq.itp ../../03_solute_params/Molecule.itp
+	cp Molecule_optfreq.top ../../03_solute_params/Molecule.top
+	cd ../../03_solute_params/
+	python 03-extract_top_itp_sections.py
+	cp ../02_resp/all.resp ./
+	python 04-write_charges.py
+	
+	# Return to working directory
+	cd ../
+fi
 
 ##### Part 2: Loop over solvents #####
 # /project/
