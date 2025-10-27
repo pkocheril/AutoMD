@@ -8,7 +8,7 @@ Created on Thu Aug 21 09:25:48 2025
 
 import os
 import glob
-import csv
+# import csv
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -227,17 +227,30 @@ def compute_fields(coord, f0, f1, atom_idx, chg, pair):
     Fmean = np.mean(Fvib[:, [a1-1, a2-1]], axis=1)
     return Fmean
 
+# def gaussian_fit(data, hist_bins=HIST_BINS):
+#     """Gaussian fit to histogrammed data."""
+#     N, edges = np.histogram(data, bins=hist_bins)
+#     edges = edges[1:] - (edges[1] - edges[0]) / 2
+#     def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) - N
+#     r0 = [np.median(N), 0, 10]; lb = [0, -np.inf, 0]
+#     res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf]),
+#                         xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=1_000_000)
+#     fitval = res.x
+#     fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2)
+#     return edges, N, fcurve, fitval
+
 def gaussian_fit(data, hist_bins=HIST_BINS):
     """Gaussian fit to histogrammed data."""
     N, edges = np.histogram(data, bins=hist_bins)
     edges = edges[1:] - (edges[1] - edges[0]) / 2
-    def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) - N
-    r0 = [np.median(N), 0, 10]; lb = [0, -np.inf, 0]
-    res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf]),
+    def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) + r[3]*np.exp(-((edges - r[4]) / r[5])**2) - N
+    r0 = [30, 0, 10, 5, 0, 10]; lb = [0, -np.inf, 0, 0, -np.inf, 0]
+    res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]),
                         xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=1_000_000)
     fitval = res.x
-    fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2)
+    fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2) + fitval[3]*np.exp(-((edges - fitval[4]) / fitval[5])**2)
     return edges, N, fcurve, fitval
+
 
 # ================================
 # Pair detection
@@ -376,13 +389,15 @@ def main():
         plt.subplot(1, len(pairs), i)
         plt.plot(edges, N, 'r.')
         plt.plot(edges, fcurve, 'b')
-        plt.title(f"{label_pair}\n{fitval[1]:.2f} ± {fitval[2]/np.sqrt(2):.2f} MV/cm")
+        meanfield = (fitval[0]*fitval[1]+fitval[3]*fitval[4])/(fitval[0]+fitval[3])
+        plt.title(f"{label_pair}\n{meanfield:.2f} ± {fitval[2]/np.sqrt(2):.2f} MV/cm")
         plt.xlabel('Electric field (MV/cm)')
         plt.ylabel('Counts')
 
         csv_rows.append([
-            label_pair, pair[0], pair[1],
-            fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2)
+            label_pair, pair[0], pair[1], meanfield,
+            fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2),
+            fitval[3], fitval[4], fitval[5], fitval[5]/np.sqrt(2)
         ])
 
     plt.tight_layout()
@@ -415,8 +430,9 @@ if __name__ == "__main__":
     
     # Try pandas instead
     rows = []
-    columns = ["Solvent", "Pair(Label)", "Atom1", "Atom2",
-    "Amplitude", "Center (MV/cm)", "Sigma (MV/cm)", "Sigma/sqrt(2) (MV/cm)"]
+    columns = ["Solvent", "Pair(Label)", "Atom1", "Atom2", "Meanfield",
+    "Amplitude1", "Center1 (MV/cm)", "Sigma1 (MV/cm)", "Sigma1/sqrt(2) (MV/cm)",
+    "Amplitude2", "Center2 (MV/cm)", "Sigma2 (MV/cm)", "Sigma2/sqrt(2) (MV/cm)"]
     
     #for folder, dirs, files in os.walk(working_dir):
     for folder in os.listdir(working_dir): # loop through folders

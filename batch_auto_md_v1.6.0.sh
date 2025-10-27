@@ -6,14 +6,13 @@
 #SBATCH --ntasks=32   # number of processor cores (i.e. tasks); max 32
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --mem-per-cpu=6G   # memory per CPU core; max 6 GB/core (192 GB total)
-#SBATCH -J "oTN MD replicates"   # job name
+#SBATCH -J "Automated MD"   # job name
 #SBATCH --mail-user=pkocheri@caltech.edu   # email address; update as needed
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
-
 
 ################## Setup ####################
 
@@ -70,7 +69,8 @@ export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
 mkdir Backup
 rsync -ax --exclude Backup ./* ./Backup/
 cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
-mv Backup *.cd* *.*r* *.*t* 00_inputs/
+# Move input backup, ChemDraw files, Gaussian chk files, and parameter files to inputs
+mv Backup *.cd* *.chk *.gro *.top *.itp 00_inputs/
 cd 00_inputs/
 
 
