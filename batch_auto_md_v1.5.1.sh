@@ -2,11 +2,11 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=100:00:00   # walltime; max 168 hours
+#SBATCH --time=150:00:00   # walltime; max 168 hours
 #SBATCH --ntasks=32   # number of processor cores (i.e. tasks); max 32
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --mem-per-cpu=6G   # memory per CPU core; max 6 GB/core (192 GB total)
-#SBATCH -J "Automated MD"   # job name
+#SBATCH -J "oTN MD replicates"   # job name
 #SBATCH --mail-user=pkocheri@caltech.edu   # email address; update as needed
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
@@ -83,11 +83,10 @@ if [[ -f all.resp && -f Molecule.gro && -f Molecule.itp && Molecule.top ]]; then
     cp all.resp Molecule.gro Molecule.itp Molecule.top ../03_solute_params/
     cd ../03_solute_params/
     
-    
     ### 6. Move and modify molecule topology files
 	# /project/03_solute_params
     python 03-extract_top_itp_sections.py
-	cp ../02_resp/all.resp ./
+	#cp ../02_resp/all.resp ./
 	python 04-write_charges.py
 	
 	# Return to working directory
