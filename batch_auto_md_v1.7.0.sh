@@ -40,8 +40,8 @@ source /resnick/groups/WeiLab/software/gromacs/bin/GMXRC
 export PATH="$PATH:/resnick/groups/WeiLab/software/vmd/bin/"
 
 # Python
-pip install python-magic scipy numpy matplotlib pandas argparse math re subprocess Path shutil sys csv
-#pip install glob
+pip install python-magic scipy numpy matplotlib pandas argparse re subprocess Path shutil sys csv
+#pip install glob math 
 #export PYTHONPATH="/usr/bin/python/"
 
 # Custom
@@ -68,7 +68,13 @@ export PATH="$PATH:/resnick/groups/WeiLab/Phil/Scripts/"
 # Make backup of input files/folders
 mkdir Backup
 rsync -ax --exclude Backup ./* ./Backup/
-cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
+
+# Load template (now from GitHub)
+git clone https://github.com/pkocheril/AutoMD
+cp -r AutoMD/Starting_template/* ./
+rm -r AutoMD/
+#cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
+
 # Move input backup, ChemDraw files, Gaussian chk files, and parameter files to inputs
 mv Backup *.cd* *.chk *.gro *.top *.itp 00_inputs/
 cd 00_inputs/
