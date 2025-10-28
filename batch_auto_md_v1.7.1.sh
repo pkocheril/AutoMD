@@ -97,7 +97,7 @@ if [[ -f all.resp && -f Molecule.gro && -f Molecule.itp && Molecule.top ]]; then
 	
 	# Return to working directory
 	cd ../
-elif [[ -f Molecule_optfreq.chk && -f Molecule_SP_VAC.chk && -f Molecule_SP_VAC.chk ]]; then
+elif [[ -f Molecule_optfreq.chk && -f Molecule_SP_VAC.chk && -f Molecule_SP_water.chk ]]; then
 	echo "Gaussian outputs found – parametrizing molecule."
 	
 	cp Molecule_optfreq.chk Molecule_SP_VAC.chk Molecule_SP_water.chk ../01_QM/

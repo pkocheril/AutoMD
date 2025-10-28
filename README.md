@@ -116,6 +116,34 @@ Folder/
 
 Final results files are copied to ```06_final_results/``` at the end of each solvent run, and electric field calculations are also performed and saved there.
 
+## Resuming using outputs from previous calculations
+If you'd like to use a previous parametrization or a previous QM calculation as a starting point, you can do that if you provide the requisite files.
+
+For previous parametrization (found in ```02_resp/``` and ```03_solute_params/```):
+
+```
+Folder/
+├── all.resp
+├── Molecule.gro
+├── Molecule.itp
+├── Molecule.top
+├── batch_auto_md_v#.sh
+└── Solvent1/
+└── Solvent2/
+```
+
+Or, from a previous QM calculation:
+
+```
+Folder/
+├── Molecule_optfreq.chk
+├── Molecule_SP_VAC.chk
+├── Molecule_SP_water.chk
+├── batch_auto_md_v#.sh
+└── Solvent1/
+└── Solvent2/
+```
+
 # How to cite
 If you found any of these functions useful, please consider citing this code as:
 
