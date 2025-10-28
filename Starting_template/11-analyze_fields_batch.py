@@ -244,8 +244,8 @@ def gaussian_fit(data, hist_bins=HIST_BINS):
     N, edges = np.histogram(data, bins=hist_bins)
     edges = edges[1:] - (edges[1] - edges[0]) / 2
     def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) + r[3]*np.exp(-((edges - r[4]) / r[5])**2) - N
-    r0 = [30, 0, 10, 5, 0, 10]; lb = [0, -np.inf, 0, 0, -np.inf, 0]
-    res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]),
+    r0 = [np.median(N), -30, 10, np.median(N), -5, 10]; lb = [0, -np.inf, 3, 0, -np.inf, 3]
+    res = least_squares(fun, r0, bounds=(lb, [np.inf, 0, np.inf, np.inf, 0, np.inf]),
                         xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=1_000_000)
     fitval = res.x
     fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2) + fitval[3]*np.exp(-((edges - fitval[4]) / fitval[5])**2)
