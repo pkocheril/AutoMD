@@ -77,7 +77,7 @@ rm -r AutoMD/
 #cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
 
 # Move input backup, ChemDraw files, Gaussian chk files, and parameter files to inputs
-mv Backup *.cd* *.chk *.gro *.top *.itp 00_inputs/
+mv Backup *.cd* *.chk *.gro *.top *.itp *.resp 00_inputs/
 cd 00_inputs/
 
 
