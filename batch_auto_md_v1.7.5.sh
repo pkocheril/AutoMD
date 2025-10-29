@@ -72,6 +72,7 @@ rsync -ax --exclude Backup ./* ./Backup/
 # Load template (now from GitHub)
 git clone https://github.com/pkocheril/AutoMD
 cp -r AutoMD/Starting_template/* ./
+mkdir -p 00_inputs/
 rm -r AutoMD/
 #cp -r /resnick/groups/WeiLab/Phil/MD/Automation/Templates/Starting_template/* ./
 
