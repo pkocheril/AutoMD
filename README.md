@@ -145,6 +145,8 @@ Folder/
 ```
 
 # How to cite
-If you found any of these functions useful, please consider citing this code as:
+If you found any of these functions useful, please cite this code as:
 
-1. PA Kocheril et al. (in preparation).
+1. PA Kocheril, RE Leighton, N Naji, D Lee, H Wang, J Du, and L Wei*. Towards accurate predictions of bond-selective fluorescence spectra. DOI: 10.48550/arXiv.2601.11902
+
+Also be sure to properly cite the other packages used in this code (OpenBabel, Gaussian16, GROMACS, etc.).
