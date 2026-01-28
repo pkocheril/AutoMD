@@ -40,7 +40,7 @@ source /resnick/groups/WeiLab/software/gromacs/bin/GMXRC
 export PATH="$PATH:/resnick/groups/WeiLab/software/vmd/bin/"
 
 # Python
-pip install python-magic scipy numpy matplotlib pandas argparse re subprocess Path shutil sys csv
+#pip install python-magic scipy numpy matplotlib pandas argparse re subprocess Path shutil sys csv
 #pip install glob math 
 #export PYTHONPATH="/usr/bin/python/"
 

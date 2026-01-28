@@ -20,6 +20,7 @@ import pandas as pd
 # ================================
 MV_CM_CONVERSION = -0.1036427 # negative to get the sign convention
 HIST_BINS = 128
+opt_threshold = 0.001 # optimality cutoff (to decide between single-peak or two-peak Gaussian fitting)
 
 # Heuristics in Å (fallback geometry)
 NITRILE_MIN_A, NITRILE_MAX_A = 1.10, 1.22   # C≡N
@@ -227,19 +228,21 @@ def compute_fields(coord, f0, f1, atom_idx, chg, pair):
     Fmean = np.mean(Fvib[:, [a1-1, a2-1]], axis=1)
     return Fmean
 
-# def gaussian_fit(data, hist_bins=HIST_BINS):
-#     """Gaussian fit to histogrammed data."""
-#     N, edges = np.histogram(data, bins=hist_bins)
-#     edges = edges[1:] - (edges[1] - edges[0]) / 2
-#     def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) - N
-#     r0 = [np.median(N), 0, 10]; lb = [0, -np.inf, 0]
-#     res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf]),
-#                         xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=1_000_000)
-#     fitval = res.x
-#     fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2)
-#     return edges, N, fcurve, fitval
-
 def gaussian_fit(data, hist_bins=HIST_BINS):
+    """Gaussian fit to histogrammed data."""
+    N, edges = np.histogram(data, bins=hist_bins)
+    edges = edges[1:] - (edges[1] - edges[0]) / 2
+    def fun(r): return r[0]*np.exp(-((edges - r[1]) / r[2])**2) - N
+    r0 = [np.median(N), 0, 10]; lb = [0, -np.inf, 0]
+    res = least_squares(fun, r0, bounds=(lb, [np.inf, np.inf, np.inf]),
+                        xtol=1e-12, ftol=1e-12, gtol=1e-12, max_nfev=1_000_000)
+    #print(res)
+    fitval = res.x
+    optimality = res.optimality
+    fcurve = fitval[0]*np.exp(-((edges - fitval[1]) / fitval[2])**2)
+    return edges, N, fcurve, fitval, optimality
+
+def twogaussian_fit(data, hist_bins=HIST_BINS):
     """Gaussian fit to histogrammed data."""
     N, edges = np.histogram(data, bins=hist_bins)
     edges = edges[1:] - (edges[1] - edges[0]) / 2
@@ -379,7 +382,13 @@ def main():
     
     for i, pair in enumerate(pairs, 1):
         F = compute_fields(coord, f0, f1, atom_idx, chg, pair)
-        edges, N, fcurve, fitval = gaussian_fit(F, hist_bins=args.hist_bins)
+        edges, N, fcurve, fitval, optimality = gaussian_fit(F, hist_bins=args.hist_bins)
+        #print(edges, N)
+        #print(fcurve,fitval)
+        if optimality > opt_threshold:
+            edges, N, fcurve, fitvalex = twogaussian_fit(F, hist_bins=args.hist_bins)
+            if fitvalex[1] > min(edges) and fitvalex[4] > min(edges) and fitvalex[1] < max(edges) and fitvalex[4] > max(edges):
+                fitval = fitvalex
 
         # Safe atom labels (if indices exceed table length, print indices)
         def label(atom_no):
@@ -389,16 +398,26 @@ def main():
         plt.subplot(1, len(pairs), i)
         plt.plot(edges, N, 'r.')
         plt.plot(edges, fcurve, 'b')
-        meanfield = (fitval[0]*fitval[1]+fitval[3]*fitval[4])/(fitval[0]+fitval[3])
+        if len(fitval) > 4:
+            meanfield = (fitval[0]*fitval[1]+fitval[3]*fitval[4])/(fitval[0]+fitval[3])
+        else:
+            meanfield = fitval[1]
         plt.title(f"{label_pair}\n{meanfield:.2f} ± {fitval[2]/np.sqrt(2):.2f} MV/cm")
-        plt.xlabel('Electric field (MV/cm)')
-        plt.ylabel('Counts')
+        plt.xlabel("Electric field (MV/cm)")
+        plt.ylabel("Counts")
 
-        csv_rows.append([
-            label_pair, pair[0], pair[1], meanfield,
-            fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2),
-            fitval[3], fitval[4], fitval[5], fitval[5]/np.sqrt(2)
-        ])
+        if len(fitval) > 4:
+            csv_rows.append([
+                label_pair, pair[0], pair[1], meanfield,
+                fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2),
+                fitval[3], fitval[4], fitval[5], fitval[5]/np.sqrt(2)
+            ])
+        else:
+            csv_rows.append([
+                label_pair, pair[0], pair[1], meanfield,
+                fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2),
+                fitval[0], fitval[1], fitval[2], fitval[2]/np.sqrt(2)
+            ])
 
     plt.tight_layout()
     fig_path = f"{args.save_prefix}_histograms.png"
